@@ -10,14 +10,14 @@ sed -i "s/(\(luciversion || ''\))/(\1) + (' \/ Built by SONG88')/g" feeds/luci/m
 # sed -i 's/reg = <0x0 0x4ab00000 0x0 0x[0-9a-f]\+>/reg = <0x0 0x4ab00000 0x0 0x06000000>/' target/linux/qualcommax/files/arch/arm64/boot/dts/qcom/ipq6018-512m.dtsi
 
 # 移除要替换的包
-rm -rf feeds/luci/applications/luci-app-wechatpush
-rm -rf feeds/luci/applications/luci-app-appfilter
-rm -rf feeds/luci/applications/luci-app-frpc
-rm -rf feeds/luci/applications/luci-app-frps
-rm -rf feeds/packages/net/open-app-filter
-rm -rf feeds/packages/net/adguardhome
-rm -rf feeds/packages/net/ariang
-rm -rf feeds/packages/net/frp
+# rm -rf feeds/luci/applications/luci-app-wechatpush
+# rm -rf feeds/luci/applications/luci-app-appfilter
+# rm -rf feeds/luci/applications/luci-app-frpc
+# rm -rf feeds/luci/applications/luci-app-frps
+# rm -rf feeds/packages/net/open-app-filter
+# rm -rf feeds/packages/net/adguardhome
+# rm -rf feeds/packages/net/ariang
+# rm -rf feeds/packages/net/frp
 rm -rf feeds/packages/lang/golang
 
 # Git稀疏克隆，只克隆指定目录到本地
@@ -30,23 +30,23 @@ function git_sparse_clone() {
   cd .. && rm -rf $repodir
 }
 
-# Go & OpenList & ariang & frp & AdGuardHome & WolPlus & Lucky & wechatpush & OpenAppFilter & 集客无线AC控制器 & 雅典娜LED控制
+# 下载并更新 clash_meta
+update_clash_meta() {
+    echo "更新 clash_meta ..."
+    mkdir -p files/etc/openclash/core
+    CLASH_META_URL="https://raw.githubusercontent.com/vernesong/OpenClash/core/master/meta/clash-linux-arm64.tar.gz"
+    wget -qO- $CLASH_META_URL | tar xOvz > files/etc/openclash/core/clash_meta
+    chmod +x files/etc/openclash/core/clash*
+}
+
+# Go & Lucky & 雅典娜LED控制
 git clone --depth=1 https://github.com/sbwml/packages_lang_golang feeds/packages/lang/golang
-git clone --depth=1 https://github.com/sbwml/luci-app-openlist2 package/openlist
-git_sparse_clone ariang https://github.com/laipeng668/packages net/ariang
-git_sparse_clone frp https://github.com/laipeng668/packages net/frp
-mv -f package/frp feeds/packages/net/frp
-git_sparse_clone frp https://github.com/laipeng668/luci applications/luci-app-frpc applications/luci-app-frps
-mv -f package/luci-app-frpc feeds/luci/applications/luci-app-frpc
-mv -f package/luci-app-frps feeds/luci/applications/luci-app-frps
-git_sparse_clone master https://github.com/kenzok8/openwrt-packages adguardhome luci-app-adguardhome
-git_sparse_clone main https://github.com/VIKINGYFY/packages luci-app-wolplus
 git clone --depth=1 https://github.com/gdy666/luci-app-lucky package/luci-app-lucky
-git clone --depth=1 https://github.com/tty228/luci-app-wechatpush package/luci-app-wechatpush
-git clone --depth=1 https://github.com/destan19/OpenAppFilter.git package/OpenAppFilter
-git clone --depth=1 https://github.com/lwb1978/openwrt-gecoosac package/openwrt-gecoosac
 git clone --depth=1 https://github.com/NONGFAH/luci-app-athena-led package/luci-app-athena-led
 chmod +x package/luci-app-athena-led/root/etc/init.d/athena_led package/luci-app-athena-led/root/usr/sbin/athena-led
 
 ./scripts/feeds update -a
 ./scripts/feeds install -a
+
+# 下载并更新 clash_meta
+update_clash_meta
