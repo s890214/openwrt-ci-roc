@@ -157,7 +157,7 @@ jobs:
       with:
         name: ${{ env.DATE }}_${{ env.FIRMWARE_TAG }}
         allowUpdates: true
-        tag_name: ${{ env.DATE }}_${{ env.FIRMWARE_TAG }}
+        tag: ${{ env.DATE }}_${{ env.FIRMWARE_TAG }}
         token: ${{ secrets.GITHUB_TOKEN }}
         artifacts: ${{ env.FIRMWARE_PATH }}/*
         body: |
