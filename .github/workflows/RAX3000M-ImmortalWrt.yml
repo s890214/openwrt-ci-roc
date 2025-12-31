@@ -7,7 +7,7 @@ on:
   #   - cron: 0 20 * * *
 
 env:
-  REPO_URL: https://github.com/immortalwrt/immortalwrt.git
+  REPO_URL: https://github.com/laipeng668/immortalwrt.git
   REPO_BRANCH: openwrt-23.05
   CONFIG_FILE: configs/RAX3000M.config
   GENERAL_CONFIG_FILE: configs/General.config

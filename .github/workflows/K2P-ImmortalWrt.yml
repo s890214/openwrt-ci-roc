@@ -7,7 +7,7 @@ on:
   #   - cron: 0 20 * * *
 
 env:
-  REPO_URL: https://github.com/immortalwrt/immortalwrt.git
+  REPO_URL: https://github.com/laipeng668/immortalwrt.git
   REPO_BRANCH: openwrt-23.05
   CONFIG_FILE: configs/K2P.config
   DIY_SCRIPT: scripts/Roc-script.sh
