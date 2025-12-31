@@ -60,8 +60,13 @@ fix_nss_ecm_stats() {
     echo "-------------------------------------------------------"
     echo "正在执行 NSS 流量统计修复..."
 
-    # 1. 查找所有匹配的文件路径
-    local file_list=$(find package/feeds -name Makefile | grep "/qca-nss-ecm/Makefile")
+    # 调试：显示目录结构
+    echo "[调试] 当前目录: $(pwd)"
+    echo "[调试] 查找 qca-nss 相关目录..."
+    find . -type d -name "*qca-nss*" 2>/dev/null | head -200
+
+    # 1. 查找所有匹配的文件路径（从 OpenWrt 源码根目录搜索）
+    local file_list=$(find . -name Makefile | grep "/qca-nss-ecm/Makefile")
 
     # 2. 统计数量 (处理空结果的情况)
     if [ -z "$file_list" ]; then
