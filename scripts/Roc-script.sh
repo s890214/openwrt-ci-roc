@@ -56,6 +56,53 @@ update_clash_meta() {
     chmod +x files/etc/openclash/core/clash*
 }
 
+fix_nss_ecm_stats() {
+    echo "-------------------------------------------------------"
+    echo "正在执行 NSS 流量统计修复..."
+
+    # 1. 查找所有匹配的文件路径
+    local file_list=$(find package/feeds -name Makefile | grep "/qca-nss-ecm/Makefile")
+
+    # 2. 统计数量 (处理空结果的情况)
+    if [ -z "$file_list" ]; then
+        local count=0
+    else
+        local count=$(echo "$file_list" | wc -l)
+    fi
+
+    echo "共找到 [ $count ] 个 qca-nss-ecm/Makefile 文件。"
+
+    if [ "$count" -eq 0 ]; then
+        echo "警告：未找到任何目标文件，跳过修正！"
+        return
+    fi
+
+    # 3. 循环处理每一个文件
+    # 使用 while read 逐行读取文件路径，防止路径带空格出错（虽然这里不太可能有空格）
+    echo "$file_list" | while read -r ecm_makefile; do
+        # 跳过空行
+        [ -z "$ecm_makefile" ] && continue
+
+        echo "正在检查文件: $ecm_makefile"
+
+        # 4. 幂等性检查：防止重复修改
+        if grep -q "ECM_NON_PORTED_TOOLS_SUPPORT" "$ecm_makefile"; then
+            echo "  -> 跳过：代码已包含流量统计补丁。"
+        else
+            # 5. 执行修改
+            sed -i 's/EXTRA_CFLAGS+=/EXTRA_CFLAGS+= -DECM_NON_PORTED_TOOLS_SUPPORT -DECM_STATE_OUTPUT_ENABLE -DECM_DB_CONNECTION_CROSS_REFERENCING_ENABLE /g' "$ecm_makefile"
+
+            # 再次检查修改是否成功
+            if grep -q "ECM_NON_PORTED_TOOLS_SUPPORT" "$ecm_makefile"; then
+                 echo "  -> 成功：编译参数已修正。"
+            else
+                 echo "  -> 错误：修改失败，请检查 sed 命令。"
+            fi
+        fi
+    done
+    echo "-------------------------------------------------------"
+}
+
 # ariang & frp & Watchcat & WolPlus & Argon & Aurora & Go & OpenList & Lucky & wechatpush & OpenAppFilter & 集客无线AC控制器 & 雅典娜LED控制
 git_sparse_clone ariang https://github.com/laipeng668/packages net/ariang
 git_sparse_clone frp https://github.com/laipeng668/packages net/frp
@@ -81,6 +128,9 @@ git clone --depth=1 https://github.com/lwb1978/openwrt-gecoosac package/openwrt-
 git clone --depth=1 https://github.com/NONGFAH/luci-app-athena-led package/luci-app-athena-led
 chmod +x package/luci-app-athena-led/root/etc/init.d/athena_led package/luci-app-athena-led/root/usr/sbin/athena-led
 
+git clone --depth=1 https://github.com/timsaya/openwrt-bandix package/openwrt-bandix
+git clone --depth=1 https://github.com/timsaya/luci-app-bandix package/luci-app-bandix
+
 ### PassWall & OpenClash ###
 
 # 移除 OpenWrt Feeds 自带的核心库
@@ -97,5 +147,9 @@ git clone --depth=1 https://github.com/vernesong/OpenClash package/luci-app-open
 # 清理 PassWall 的 chnlist 规则文件
 echo "baidu.com"  > package/luci-app-passwall/luci-app-passwall/root/usr/share/passwall/rules/chnlist
 
+# 先更新并安装 feeds (确保目录结构完整且是最新版本)
 ./scripts/feeds update -a
 ./scripts/feeds install -a
+
+# 最后执行 NSS 流量统计修复 (确保修改的是最终文件)
+fix_nss_ecm_stats
