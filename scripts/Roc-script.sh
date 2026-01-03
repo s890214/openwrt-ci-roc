@@ -137,6 +137,9 @@ git clone --depth=1 https://github.com/timsaya/luci-app-bandix package/luci-app-
 rm -rf feeds/packages/net/{xray-core,v2ray-geodata,sing-box,chinadns-ng,dns2socks,hysteria,ipt2socks,microsocks,naiveproxy,shadowsocks-libev,shadowsocks-rust,shadowsocksr-libev,simple-obfs,tcping,trojan-plus,tuic-client,v2ray-plugin,xray-plugin,geoview,shadow-tls}
 git clone --depth=1 https://github.com/xiaorouji/openwrt-passwall-packages package/passwall-packages
 
+# 下载并更新 clash_meta
+update_clash_meta
+
 # 移除 OpenWrt Feeds 过时的LuCI版本
 rm -rf feeds/luci/applications/luci-app-passwall
 rm -rf feeds/luci/applications/luci-app-openclash
