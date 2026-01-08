@@ -97,7 +97,20 @@ fix_nss_ecm_stats() {
         [ -z "$ecm_makefile" ] && continue
         local ecm_dir=$(dirname "$ecm_makefile")
         
-        find "$ecm_dir" -name "ecm_db_connection.c" | while read -r db_file; do
+        # 使用 find -L 跟随软链接，并增加搜索深度
+        local found_files=$(find -L "$ecm_dir" -name "ecm_db_connection.c")
+        
+        if [ -z "$found_files" ]; then
+            echo "  -> [警告] 在 $ecm_dir 中未找到 ecm_db_connection.c，尝试全局搜索..."
+            found_files=$(find -L feeds/ -name "ecm_db_connection.c" | grep "qca-nss-ecm")
+        fi
+
+        if [ -z "$found_files" ]; then
+            echo "  -> [失败] 始终未找到 ecm_db_connection.c。原因可能是：1.源码为压缩包尚未解压；2.文件名已变更。"
+            continue
+        fi
+
+        echo "$found_files" | while read -r db_file; do
             if grep -q "ecm_db_connection_data_totals_update(feci, 0, 0)" "$db_file"; then
                 echo "  -> [修正] $db_file"
                 sed -i 's/ecm_db_connection_data_totals_update(feci, 0, 0)/ecm_db_connection_data_totals_update(feci, 1, 1)/g' "$db_file"
@@ -105,7 +118,13 @@ fix_nss_ecm_stats() {
             elif grep -q "ecm_db_connection_data_totals_update(feci, 1, 1)" "$db_file"; then
                 echo "  -> [跳过] $db_file 已是强制同步模式。"
             else
-                echo "  -> [警告] $db_file 未找到目标代码行，可能源码结构已变动。"
+                echo "  -> [警告] $db_file 存在但未找到目标代码行，可能变量名不是 feci。"
+                # 尝试更宽松的匹配 (匹配 feci 或 fci)
+                if grep -qE "ecm_db_connection_data_totals_update\(fc*i, 0, 0\)" "$db_file"; then
+                    echo "     检测到兼容变量名，正在尝试正则修正..."
+                    sed -i -E 's/ecm_db_connection_data_totals_update\(fc*i, 0, 0\)/ecm_db_connection_data_totals_update(feci, 1, 1)/g' "$db_file"
+                    echo "     确认: 正则修正成功。"
+                fi
             fi
         done
     done
