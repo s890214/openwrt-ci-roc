@@ -91,34 +91,21 @@ fix_nss_ecm_stats() {
 
     echo ""
 
-    # 4. 任务二：注入源码修正补丁 (针对 qosmio 这种动态拉取源码的仓库)
+    # 4. 任务二：注入源码修正补丁 (从项目 patches 目录拷贝)
     echo "任务 [2/2]: 正在注入 ecm_db_connection.c 统计同步补丁..."
     echo "$file_list" | while read -r ecm_makefile; do
         [ -z "$ecm_makefile" ] && continue
         local ecm_dir=$(dirname "$ecm_makefile")
         local patch_dir="$ecm_dir/patches"
-        local patch_file="$patch_dir/999-force-stats-sync.patch"
-
+        
         mkdir -p "$patch_dir"
 
-        # 创建补丁文件
-        cat > "$patch_file" <<EOF
---- a/frontends/ecm_db_connection.c
-+++ b/frontends/ecm_db_connection.c
-@@ -1385,7 +1385,7 @@
- 	/*
- 	 * Update the connection's data totals
- 	 */
--	ecm_db_connection_data_totals_update(feci, 0, 0);
-+	ecm_db_connection_data_totals_update(feci, 1, 1);
- }
-EOF
-
-        if [ -f "$patch_file" ]; then
-            echo "  -> [成功] 已将统计同步补丁注入到: $patch_dir"
-            echo "     补丁将强制 ECM 每一跳都同步数据到 conntrack。"
+        # 从项目根目录的 patches 文件夹拷贝补丁
+        if [ -f "$GITHUB_WORKSPACE/patches/999-force-stats-sync.patch" ]; then
+            cp -f "$GITHUB_WORKSPACE/patches/999-force-stats-sync.patch" "$patch_dir/"
+            echo "  -> [成功] 已将补丁文件拷贝至: $patch_dir"
         else
-            echo "  -> [失败] 无法创建补丁文件，请检查磁盘空间或权限。"
+            echo "  -> [失败] 未在项目目录找到补丁文件，请检查路径。"
         fi
     done
     echo "-------------------------------------------------------"
