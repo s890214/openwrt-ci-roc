@@ -69,32 +69,46 @@ fix_nss_ecm_stats() {
         return
     fi
 
-    # 3. 循环处理每一个文件
-    # 使用 while read 逐行读取文件路径，防止路径带空格出错（虽然这里不太可能有空格）
+    # 3. 任务一：修正 Makefile 编译宏
+    echo "任务 [1/2]: 正在检查并修正 Makefile 编译宏..."
     echo "$file_list" | while read -r ecm_makefile; do
-        # 跳过空行
         [ -z "$ecm_makefile" ] && continue
-
-        echo "正在检查文件: $ecm_makefile"
-
-        # 4. 幂等性检查：防止重复修改
+        
         if grep -q "ECM_NON_PORTED_TOOLS_SUPPORT" "$ecm_makefile"; then
-            echo "  -> 跳过：代码已包含流量统计补丁。"
+            echo "  -> [跳过] $ecm_makefile 已包含统计宏。"
         else
-            # 5. 执行修改：增加更全面的统计支持宏
-            # -DECM_NON_PORTED_TOOLS_SUPPORT: 支持非端口工具统计 (如 nlbwmon)
-            # -DECM_INTERFACE_VLAN_ENABLE: 支持 VLAN 接口统计
-            # -DECM_INTERFACE_SIT_ENABLE: 支持 SIT 隧道统计
-            # -DECM_INTERFACE_TUNIPIP6_ENABLE: 支持 IPv6 隧道统计
+            echo "  -> [修正] $ecm_makefile"
+            echo "     注入: ECM_NON_PORTED_TOOLS_SUPPORT, ECM_INTERFACE_VLAN_ENABLE, ECM_INTERFACE_SIT_ENABLE, ECM_INTERFACE_TUNIPIP6_ENABLE"
             sed -i 's/EXTRA_CFLAGS+=/EXTRA_CFLAGS+= -DECM_NON_PORTED_TOOLS_SUPPORT -DECM_STATE_OUTPUT_ENABLE -DECM_DB_CONNECTION_CROSS_REFERENCING_ENABLE -DECM_INTERFACE_VLAN_ENABLE -DECM_INTERFACE_SIT_ENABLE -DECM_INTERFACE_TUNIPIP6_ENABLE /g' "$ecm_makefile"
-
-            # 再次检查修改是否成功
+            
+            # 验证
             if grep -q "ECM_NON_PORTED_TOOLS_SUPPORT" "$ecm_makefile"; then
-                 echo "  -> 成功：编译参数已修正。"
+                echo "     确认: 宏注入成功。"
             else
-                 echo "  -> 错误：修改失败，请检查 sed 命令。"
+                echo "     错误: 宏注入失败，请检查权限。"
             fi
         fi
+    done
+
+    echo ""
+
+    # 4. 任务二：修正 ecm_db_connection.c 源码同步逻辑
+    echo "任务 [2/2]: 正在检查并修正 ecm_db_connection.c 源码同步逻辑..."
+    echo "$file_list" | while read -r ecm_makefile; do
+        [ -z "$ecm_makefile" ] && continue
+        local ecm_dir=$(dirname "$ecm_makefile")
+        
+        find "$ecm_dir" -name "ecm_db_connection.c" | while read -r db_file; do
+            if grep -q "ecm_db_connection_data_totals_update(feci, 0, 0)" "$db_file"; then
+                echo "  -> [修正] $db_file"
+                sed -i 's/ecm_db_connection_data_totals_update(feci, 0, 0)/ecm_db_connection_data_totals_update(feci, 1, 1)/g' "$db_file"
+                echo "     确认: 已切换为强制同步模式。"
+            elif grep -q "ecm_db_connection_data_totals_update(feci, 1, 1)" "$db_file"; then
+                echo "  -> [跳过] $db_file 已是强制同步模式。"
+            else
+                echo "  -> [警告] $db_file 未找到目标代码行，可能源码结构已变动。"
+            fi
+        done
     done
     echo "-------------------------------------------------------"
 }
