@@ -70,7 +70,7 @@ fix_nss_ecm_stats() {
     fi
 
     # 3. 任务一：修正 Makefile 编译宏
-    echo "任务 [1/2]: 正在检查并修正 Makefile 编译宏..."
+    echo "任务 [1/3]: 正在检查并修正 Makefile 编译宏..."
     echo "$file_list" | while read -r ecm_makefile; do
         [ -z "$ecm_makefile" ] && continue
         
@@ -91,23 +91,43 @@ fix_nss_ecm_stats() {
 
     echo ""
 
-    # 4. 任务二：注入源码修正补丁 (强制 Tab 缩进)
-    echo "任务 [2/2]: 正在注入 ecm_db_connection.c 统计同步补丁..."
+    # 4. 任务二：注入 ecm_nss_ipv4.c 统计同步补丁
+    echo "任务 [2/3]: 正在注入 ecm_nss_ipv4.c conntrack 同步补丁..."
     echo "$file_list" | while read -r ecm_makefile; do
         [ -z "$ecm_makefile" ] && continue
         local ecm_dir=$(dirname "$ecm_makefile")
         local patch_dir="$ecm_dir/patches"
-        local patch_file="$patch_dir/999-force-stats-sync.patch"
+        local patch_file="$patch_dir/999-force-conntrack-acct.patch"
         
         mkdir -p "$patch_dir"
 
-        # 使用 printf 强制生成带 Tab (\t) 的补丁，防止空格导致失效
-        # 路径核实：根据 qosmio 0023号补丁校验，不使用 src/ 前缀
-        printf -- "--- a/frontends/ecm_db_connection.c\n" > "$patch_file"
-        printf -- "+++ b/frontends/ecm_db_connection.c\n" >> "$patch_file"
-        printf -- "@@ -1385,1 +1385,1 @@\n" >> "$patch_file"
-        printf -- "-\tecm_db_connection_data_totals_update(feci, 0, 0);\n" >> "$patch_file"
-        printf -- "+\tecm_db_connection_data_totals_update(feci, 1, 1);\n" >> "$patch_file"
+        # 生成针对 ecm_nss_ipv4.c 的补丁
+        cat > "$patch_file" << 'EOF'
+--- a/frontends/nss/ecm_nss_ipv4.c
++++ b/frontends/nss/ecm_nss_ipv4.c
+@@ -545,11 +545,16 @@
+ 	}
+ 
+-	acct = nf_conn_acct_find(ct)->counter;
+-	if (acct) {
++	acct = nf_conn_acct_find(ct);
++	if (!acct) {
++		acct = nf_ct_acct_ext_add(ct, GFP_ATOMIC);
++	}
++	if (acct) {
++		struct nf_conn_counter *counters = acct->counter;
+ 		spin_lock_bh(&ct->lock);
+-		atomic64_add(sync->flow_rx_packet_count, &acct[flow_dir].packets);
+-		atomic64_add(sync->flow_rx_byte_count, &acct[flow_dir].bytes);
+-		atomic64_add(sync->return_rx_packet_count, &acct[return_dir].packets);
+-		atomic64_add(sync->return_rx_byte_count, &acct[return_dir].bytes);
++		atomic64_add(sync->flow_rx_packet_count, &counters[flow_dir].packets);
++		atomic64_add(sync->flow_rx_byte_count, &counters[flow_dir].bytes);
++		atomic64_add(sync->return_rx_packet_count, &counters[return_dir].packets);
++		atomic64_add(sync->return_rx_byte_count, &counters[return_dir].bytes);
+ 		spin_unlock_bh(&ct->lock);
+ 	}
+EOF
 
         if [ -f "$patch_file" ]; then
             echo "  -> [成功] 补丁已生成: $patch_file"
@@ -115,6 +135,54 @@ fix_nss_ecm_stats() {
             echo "  -> [失败] 无法生成补丁文件。"
         fi
     done
+
+    echo ""
+
+    # 5. 任务三：注入 ecm_nss_ipv6.c 统计同步补丁
+    echo "任务 [3/3]: 正在注入 ecm_nss_ipv6.c conntrack 同步补丁..."
+    echo "$file_list" | while read -r ecm_makefile; do
+        [ -z "$ecm_makefile" ] && continue
+        local ecm_dir=$(dirname "$ecm_makefile")
+        local patch_dir="$ecm_dir/patches"
+        local patch_file="$patch_dir/998-force-conntrack-acct-ipv6.patch"
+        
+        mkdir -p "$patch_dir"
+
+        # 生成针对 ecm_nss_ipv6.c 的补丁
+        cat > "$patch_file" << 'EOF'
+--- a/frontends/nss/ecm_nss_ipv6.c
++++ b/frontends/nss/ecm_nss_ipv6.c
+@@ -525,11 +525,16 @@
+ 	}
+ 
+-	acct = nf_conn_acct_find(ct)->counter;
+-	if (acct) {
++	acct = nf_conn_acct_find(ct);
++	if (!acct) {
++		acct = nf_ct_acct_ext_add(ct, GFP_ATOMIC);
++	}
++	if (acct) {
++		struct nf_conn_counter *counters = acct->counter;
+ 		spin_lock_bh(&ct->lock);
+-		atomic64_add(sync->flow_rx_packet_count, &acct[flow_dir].packets);
+-		atomic64_add(sync->flow_rx_byte_count, &acct[flow_dir].bytes);
+-		atomic64_add(sync->return_rx_packet_count, &acct[return_dir].packets);
+-		atomic64_add(sync->return_rx_byte_count, &acct[return_dir].bytes);
++		atomic64_add(sync->flow_rx_packet_count, &counters[flow_dir].packets);
++		atomic64_add(sync->flow_rx_byte_count, &counters[flow_dir].bytes);
++		atomic64_add(sync->return_rx_packet_count, &counters[return_dir].packets);
++		atomic64_add(sync->return_rx_byte_count, &counters[return_dir].bytes);
+ 		spin_unlock_bh(&ct->lock);
+ 	}
+EOF
+
+        if [ -f "$patch_file" ]; then
+            echo "  -> [成功] 补丁已生成: $patch_file"
+        else
+            echo "  -> [失败] 无法生成补丁文件。"
+        fi
+    done
+
     echo "-------------------------------------------------------"
 }
 
