@@ -81,8 +81,12 @@ fix_nss_ecm_stats() {
         if grep -q "ECM_NON_PORTED_TOOLS_SUPPORT" "$ecm_makefile"; then
             echo "  -> 跳过：代码已包含流量统计补丁。"
         else
-            # 5. 执行修改
-            sed -i 's/EXTRA_CFLAGS+=/EXTRA_CFLAGS+= -DECM_NON_PORTED_TOOLS_SUPPORT -DECM_STATE_OUTPUT_ENABLE -DECM_DB_CONNECTION_CROSS_REFERENCING_ENABLE /g' "$ecm_makefile"
+            # 5. 执行修改：增加更全面的统计支持宏
+            # -DECM_NON_PORTED_TOOLS_SUPPORT: 支持非端口工具统计 (如 nlbwmon)
+            # -DECM_INTERFACE_VLAN_ENABLE: 支持 VLAN 接口统计
+            # -DECM_INTERFACE_SIT_ENABLE: 支持 SIT 隧道统计
+            # -DECM_INTERFACE_TUNIPIP6_ENABLE: 支持 IPv6 隧道统计
+            sed -i 's/EXTRA_CFLAGS+=/EXTRA_CFLAGS+= -DECM_NON_PORTED_TOOLS_SUPPORT -DECM_STATE_OUTPUT_ENABLE -DECM_DB_CONNECTION_CROSS_REFERENCING_ENABLE -DECM_INTERFACE_VLAN_ENABLE -DECM_INTERFACE_SIT_ENABLE -DECM_INTERFACE_TUNIPIP6_ENABLE /g' "$ecm_makefile"
 
             # 再次检查修改是否成功
             if grep -q "ECM_NON_PORTED_TOOLS_SUPPORT" "$ecm_makefile"; then
