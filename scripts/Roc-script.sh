@@ -91,21 +91,35 @@ fix_nss_ecm_stats() {
 
     echo ""
 
-    # 4. 任务二：注入源码修正补丁 (从项目 patches 目录拷贝)
+    # 4. 任务二：注入源码修正补丁 (自动适配路径并强制 Tab 缩进)
     echo "任务 [2/2]: 正在注入 ecm_db_connection.c 统计同步补丁..."
     echo "$file_list" | while read -r ecm_makefile; do
         [ -z "$ecm_makefile" ] && continue
         local ecm_dir=$(dirname "$ecm_makefile")
         local patch_dir="$ecm_dir/patches"
+        local patch_file="$patch_dir/999-force-stats-sync.patch"
         
         mkdir -p "$patch_dir"
 
-        # 从项目根目录的 patches 文件夹拷贝补丁
-        if [ -f "$GITHUB_WORKSPACE/patches/999-force-stats-sync.patch" ]; then
-            cp -f "$GITHUB_WORKSPACE/patches/999-force-stats-sync.patch" "$patch_dir/"
-            echo "  -> [成功] 已将补丁文件拷贝至: $patch_dir"
+        # 自动检测路径前缀：检查是否存在 qosmio 的重构补丁 (0001-*.patch)
+        local p_prefix=""
+        if ls "$patch_dir"/0001-*.patch >/dev/null 2>&1; then
+            p_prefix="src/"
+            echo "  -> 检测到 src/ 目录重构，应用适配路径。"
+        fi
+
+        # 使用 printf 强制生成带 Tab (\t) 的补丁，防止空格导致失效
+        # 采用更简短的上下文以提高匹配成功率
+        printf -- "--- a/${p_prefix}frontends/ecm_db_connection.c\n" > "$patch_file"
+        printf -- "+++ b/${p_prefix}frontends/ecm_db_connection.c\n" >> "$patch_file"
+        printf -- "@@ -1385,1 +1385,1 @@\n" >> "$patch_file"
+        printf -- "-\tecm_db_connection_data_totals_update(feci, 0, 0);\n" >> "$patch_file"
+        printf -- "+\tecm_db_connection_data_totals_update(feci, 1, 1);\n" >> "$patch_file"
+
+        if [ -f "$patch_file" ]; then
+            echo "  -> [成功] 补丁已生成: $patch_file"
         else
-            echo "  -> [失败] 未在项目目录找到补丁文件，请检查路径。"
+            echo "  -> [失败] 无法生成补丁文件。"
         fi
     done
     echo "-------------------------------------------------------"
