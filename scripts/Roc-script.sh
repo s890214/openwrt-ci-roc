@@ -78,7 +78,6 @@ fix_nss_ecm_stats() {
             echo "  -> [跳过] $ecm_makefile 已包含统计宏。"
         else
             echo "  -> [修正] $ecm_makefile"
-            echo "     注入: ECM_NON_PORTED_TOOLS_SUPPORT, ECM_INTERFACE_VLAN_ENABLE, ECM_INTERFACE_SIT_ENABLE, ECM_INTERFACE_TUNIPIP6_ENABLE"
             sed -i 's/EXTRA_CFLAGS+=/EXTRA_CFLAGS+= -DECM_NON_PORTED_TOOLS_SUPPORT -DECM_STATE_OUTPUT_ENABLE -DECM_DB_CONNECTION_CROSS_REFERENCING_ENABLE -DECM_INTERFACE_VLAN_ENABLE -DECM_INTERFACE_SIT_ENABLE -DECM_INTERFACE_TUNIPIP6_ENABLE /g' "$ecm_makefile"
             
             # 验证
