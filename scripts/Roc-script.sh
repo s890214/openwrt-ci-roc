@@ -91,7 +91,7 @@ fix_nss_ecm_stats() {
 
     echo ""
 
-    # 4. 任务二：注入源码修正补丁 (自动适配路径并强制 Tab 缩进)
+    # 4. 任务二：注入源码修正补丁 (强制 Tab 缩进)
     echo "任务 [2/2]: 正在注入 ecm_db_connection.c 统计同步补丁..."
     echo "$file_list" | while read -r ecm_makefile; do
         [ -z "$ecm_makefile" ] && continue
@@ -101,17 +101,10 @@ fix_nss_ecm_stats() {
         
         mkdir -p "$patch_dir"
 
-        # 自动检测路径前缀：检查是否存在 qosmio 的重构补丁 (0001-*.patch)
-        local p_prefix=""
-        if ls "$patch_dir"/0001-*.patch >/dev/null 2>&1; then
-            p_prefix="src/"
-            echo "  -> 检测到 src/ 目录重构，应用适配路径。"
-        fi
-
         # 使用 printf 强制生成带 Tab (\t) 的补丁，防止空格导致失效
-        # 采用更简短的上下文以提高匹配成功率
-        printf -- "--- a/${p_prefix}frontends/ecm_db_connection.c\n" > "$patch_file"
-        printf -- "+++ b/${p_prefix}frontends/ecm_db_connection.c\n" >> "$patch_file"
+        # 路径核实：根据 qosmio 0023号补丁校验，不使用 src/ 前缀
+        printf -- "--- a/frontends/ecm_db_connection.c\n" > "$patch_file"
+        printf -- "+++ b/frontends/ecm_db_connection.c\n" >> "$patch_file"
         printf -- "@@ -1385,1 +1385,1 @@\n" >> "$patch_file"
         printf -- "-\tecm_db_connection_data_totals_update(feci, 0, 0);\n" >> "$patch_file"
         printf -- "+\tecm_db_connection_data_totals_update(feci, 1, 1);\n" >> "$patch_file"
@@ -172,9 +165,11 @@ git clone --depth=1 https://github.com/vernesong/OpenClash package/luci-app-open
 # 清理 PassWall 的 chnlist 规则文件
 echo "baidu.com"  > package/luci-app-passwall/luci-app-passwall/root/usr/share/passwall/rules/chnlist
 
-# 先更新并安装 feeds (确保目录结构完整且是最新版本)
+# 更新 feeds (拉取远程源码到本地)
 ./scripts/feeds update -a
-./scripts/feeds install -a
 
-# 最后执行 NSS 流量统计修复 (确保修改的是最终文件)
+# 在安装之前执行 NSS 流量统计修复 (此时源码已拉取，补丁注入最安全)
 fix_nss_ecm_stats
+
+# 安装 feeds (创建软链接)
+./scripts/feeds install -a
