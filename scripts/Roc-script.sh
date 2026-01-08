@@ -91,42 +91,35 @@ fix_nss_ecm_stats() {
 
     echo ""
 
-    # 4. 任务二：修正 ecm_db_connection.c 源码同步逻辑
-    echo "任务 [2/2]: 正在检查并修正 ecm_db_connection.c 源码同步逻辑..."
+    # 4. 任务二：注入源码修正补丁 (针对 qosmio 这种动态拉取源码的仓库)
+    echo "任务 [2/2]: 正在注入 ecm_db_connection.c 统计同步补丁..."
     echo "$file_list" | while read -r ecm_makefile; do
         [ -z "$ecm_makefile" ] && continue
         local ecm_dir=$(dirname "$ecm_makefile")
-        
-        # 使用 find -L 跟随软链接，并增加搜索深度
-        local found_files=$(find -L "$ecm_dir" -name "ecm_db_connection.c")
-        
-        if [ -z "$found_files" ]; then
-            echo "  -> [警告] 在 $ecm_dir 中未找到 ecm_db_connection.c，尝试全局搜索..."
-            found_files=$(find -L feeds/ -name "ecm_db_connection.c" | grep "qca-nss-ecm")
-        fi
+        local patch_dir="$ecm_dir/patches"
+        local patch_file="$patch_dir/999-force-stats-sync.patch"
 
-        if [ -z "$found_files" ]; then
-            echo "  -> [失败] 始终未找到 ecm_db_connection.c。原因可能是：1.源码为压缩包尚未解压；2.文件名已变更。"
-            continue
-        fi
+        mkdir -p "$patch_dir"
 
-        echo "$found_files" | while read -r db_file; do
-            if grep -q "ecm_db_connection_data_totals_update(feci, 0, 0)" "$db_file"; then
-                echo "  -> [修正] $db_file"
-                sed -i 's/ecm_db_connection_data_totals_update(feci, 0, 0)/ecm_db_connection_data_totals_update(feci, 1, 1)/g' "$db_file"
-                echo "     确认: 已切换为强制同步模式。"
-            elif grep -q "ecm_db_connection_data_totals_update(feci, 1, 1)" "$db_file"; then
-                echo "  -> [跳过] $db_file 已是强制同步模式。"
-            else
-                echo "  -> [警告] $db_file 存在但未找到目标代码行，可能变量名不是 feci。"
-                # 尝试更宽松的匹配 (匹配 feci 或 fci)
-                if grep -qE "ecm_db_connection_data_totals_update\(fc*i, 0, 0\)" "$db_file"; then
-                    echo "     检测到兼容变量名，正在尝试正则修正..."
-                    sed -i -E 's/ecm_db_connection_data_totals_update\(fc*i, 0, 0\)/ecm_db_connection_data_totals_update(feci, 1, 1)/g' "$db_file"
-                    echo "     确认: 正则修正成功。"
-                fi
-            fi
-        done
+        # 创建补丁文件
+        cat > "$patch_file" <<EOF
+--- a/frontends/ecm_db_connection.c
++++ b/frontends/ecm_db_connection.c
+@@ -1385,7 +1385,7 @@
+ 	/*
+ 	 * Update the connection's data totals
+ 	 */
+-	ecm_db_connection_data_totals_update(feci, 0, 0);
++	ecm_db_connection_data_totals_update(feci, 1, 1);
+ }
+EOF
+
+        if [ -f "$patch_file" ]; then
+            echo "  -> [成功] 已将统计同步补丁注入到: $patch_dir"
+            echo "     补丁将强制 ECM 每一跳都同步数据到 conntrack。"
+        else
+            echo "  -> [失败] 无法创建补丁文件，请检查磁盘空间或权限。"
+        fi
     done
     echo "-------------------------------------------------------"
 }
