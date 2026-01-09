@@ -105,26 +105,24 @@ fix_nss_ecm_stats() {
         cat > "$patch_file" << 'EOF'
 --- a/frontends/nss/ecm_nss_ipv4.c
 +++ b/frontends/nss/ecm_nss_ipv4.c
-@@ -545,11 +545,16 @@
+@@ -545,11 +545,13 @@
  	}
  
 -	acct = nf_conn_acct_find(ct)->counter;
 -	if (acct) {
-+	acct = nf_conn_acct_find(ct);
-+	if (!acct) {
-+		acct = nf_ct_acct_ext_add(ct, GFP_ATOMIC);
++	struct nf_conn_acct *acct_ext = nf_conn_acct_find(ct);
++	if (!acct_ext) {
++		DEBUG_WARN("%px: Conntrack accounting extension not found, stats sync skipped\n", ct);
++		return;
 +	}
++	acct = acct_ext->counter;
 +	if (acct) {
-+		struct nf_conn_counter *counters = acct->counter;
  		spin_lock_bh(&ct->lock);
--		atomic64_add(sync->flow_rx_packet_count, &acct[flow_dir].packets);
--		atomic64_add(sync->flow_rx_byte_count, &acct[flow_dir].bytes);
--		atomic64_add(sync->return_rx_packet_count, &acct[return_dir].packets);
--		atomic64_add(sync->return_rx_byte_count, &acct[return_dir].bytes);
-+		atomic64_add(sync->flow_rx_packet_count, &counters[flow_dir].packets);
-+		atomic64_add(sync->flow_rx_byte_count, &counters[flow_dir].bytes);
-+		atomic64_add(sync->return_rx_packet_count, &counters[return_dir].packets);
-+		atomic64_add(sync->return_rx_byte_count, &counters[return_dir].bytes);
+ 		atomic64_add(sync->flow_rx_packet_count, &acct[flow_dir].packets);
+ 		atomic64_add(sync->flow_rx_byte_count, &acct[flow_dir].bytes);
+ 
+ 		atomic64_add(sync->return_rx_packet_count, &acct[return_dir].packets);
+ 		atomic64_add(sync->return_rx_byte_count, &acct[return_dir].bytes);
  		spin_unlock_bh(&ct->lock);
  	}
 EOF
@@ -152,26 +150,24 @@ EOF
         cat > "$patch_file" << 'EOF'
 --- a/frontends/nss/ecm_nss_ipv6.c
 +++ b/frontends/nss/ecm_nss_ipv6.c
-@@ -525,11 +525,16 @@
+@@ -525,11 +525,13 @@
  	}
  
 -	acct = nf_conn_acct_find(ct)->counter;
 -	if (acct) {
-+	acct = nf_conn_acct_find(ct);
-+	if (!acct) {
-+		acct = nf_ct_acct_ext_add(ct, GFP_ATOMIC);
++	struct nf_conn_acct *acct_ext = nf_conn_acct_find(ct);
++	if (!acct_ext) {
++		DEBUG_WARN("%px: Conntrack accounting extension not found, stats sync skipped\n", ct);
++		return;
 +	}
++	acct = acct_ext->counter;
 +	if (acct) {
-+		struct nf_conn_counter *counters = acct->counter;
  		spin_lock_bh(&ct->lock);
--		atomic64_add(sync->flow_rx_packet_count, &acct[flow_dir].packets);
--		atomic64_add(sync->flow_rx_byte_count, &acct[flow_dir].bytes);
--		atomic64_add(sync->return_rx_packet_count, &acct[return_dir].packets);
--		atomic64_add(sync->return_rx_byte_count, &acct[return_dir].bytes);
-+		atomic64_add(sync->flow_rx_packet_count, &counters[flow_dir].packets);
-+		atomic64_add(sync->flow_rx_byte_count, &counters[flow_dir].bytes);
-+		atomic64_add(sync->return_rx_packet_count, &counters[return_dir].packets);
-+		atomic64_add(sync->return_rx_byte_count, &counters[return_dir].bytes);
+ 		atomic64_add(sync->flow_rx_packet_count, &acct[flow_dir].packets);
+ 		atomic64_add(sync->flow_rx_byte_count, &acct[flow_dir].bytes);
+ 
+ 		atomic64_add(sync->return_rx_packet_count, &acct[return_dir].packets);
+ 		atomic64_add(sync->return_rx_byte_count, &acct[return_dir].bytes);
  		spin_unlock_bh(&ct->lock);
  	}
 EOF
