@@ -140,11 +140,12 @@ jobs:
         cp $OPENWRT_PATH/.config Arthur.Athena.Taiyi.config
         mv config.buildinfo Arthur.Athena.Taiyi.config.buildinfo
         mv immortalwrt-qualcommax-ipq60xx.manifest immortalwrt-qualcommax-ipq60xx-Arthur.Athena.Taiyi.manifest
-        mv -f $OPENWRT_PATH/bin/packages/*/*/*.apk packages
-        tar -zcf Arthur.Athena.Taiyi.Packages.tar.gz packages
-        mkdir -p dl
-        mv -f $OPENWRT_PATH/dl/{ath11k*,nss*,qca*} dl
-        tar -zcf Arthur.Athena.Taiyi.DL.tar.gz dl
+        # 不需要打包 Packages 和 DL
+        # mv -f $OPENWRT_PATH/bin/packages/*/*/*.apk packages
+        # tar -zcf Arthur.Athena.Taiyi.Packages.tar.gz packages
+        # mkdir -p dl
+        # mv -f $OPENWRT_PATH/dl/{ath11k*,nss*,qca*} dl
+        # tar -zcf Arthur.Athena.Taiyi.DL.tar.gz dl
         rm -rf packages dl feeds.buildinfo version.buildinfo sha256sums profiles.json
         echo "FIRMWARE_PATH=$PWD" >> $GITHUB_ENV
 
@@ -152,7 +153,7 @@ jobs:
       if: steps.compile.outputs.status == 'success' && env.FIRMWARE_RELEASE != 'true'
       uses: actions/upload-artifact@main
       with:
-        name: ${{ env.SOURCE_REPO }}-firmware-${{ env.DEVICE_TARGET }}-${{ env.DEVICE_SUBTARGET }}-${{ env.FILE_DATE }}
+        name: ${{ env.SOURCE_REPO }}-${{ env.DEVICE_SUBTARGET }}-${{ env.FILE_DATE }}
         path: ${{ env.FIRMWARE_PATH }}
 
     - name: Upload Firmware To Release(发布固件)
