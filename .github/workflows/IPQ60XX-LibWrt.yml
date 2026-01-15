@@ -144,6 +144,22 @@ jobs:
         # tar -zcf ipq60xx.Packages.tar.gz packages
         rm -rf packages feeds.buildinfo version.buildinfo sha256sums profiles.json
         echo "FIRMWARE_PATH=$PWD" >> $GITHUB_ENV
+        
+        # 生成页面摘要
+        cat >> $GITHUB_STEP_SUMMARY <<EOF
+        **This is OpenWrt Firmware for ${{ env.FIRMWARE_TAG }}**
+        ### 📒 固件信息
+        - 这是开启全功能NSS的6.12内核固件，默认主题为Aurora；该固件在ImmortalWrt的基础上，添加了额外的软件包cpufreq、ddns、ttyd、upnp、wolplus、samba4、vlmcsd、aria2、autoreboot、uhttpd、wifischedule、frps、frpc、diskman、hd-idle、banip、acme、arpbind、usb-printer、passwall、oaf、sqm、wireguard、watchcat、wechatpush、3cat、smartdns，并添加了若干工具，具体详见IPQ60XX.config和General.config。
+        - 💻 这是 ${{ env.FIRMWARE_TAG }} 平台使用的 OpenWrt 固件
+        - ⚽ 固件源码: ${{ env.REPO_URL }}
+        - 💝 源码分支: ${{ env.REPO_BRANCH }}
+        - 🌐 默认地址: **192.168.1.1**
+        - 🔑 默认密码: none
+        ### 🧊 固件版本
+        - 固件内核版本：**${{ env.VERSION_KERNEL }}**
+        - 固件编译前最后一次➦[主源码](${{ env.REPO_URL }})更新记录
+        - ${{ env.VERSION_INFO }}
+        EOF
 
     - name: Upload Firmware To Artifact(将固件上传到Artifact)
       if: steps.compile.outputs.status == 'success' && env.FIRMWARE_RELEASE != 'true'
