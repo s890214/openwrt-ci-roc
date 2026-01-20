@@ -137,11 +137,12 @@ jobs:
       if: steps.compile.outputs.status == 'success'
       run: |
         cd $OPENWRT_PATH/bin/targets/*/*
-        cp $OPENWRT_PATH/.config ipq60xx.config
-        mv config.buildinfo ipq60xx.config.buildinfo
+        cp $OPENWRT_PATH/.config IPQ60XX.config
+        mv config.buildinfo IPQ60XX.config.buildinfo
+        mv libwrt-qualcommax-ipq60xx.manifest IPQ60XX.manifest
         # 不需要打包 Packages
         # mv -f $OPENWRT_PATH/bin/packages/*/*/*.apk packages
-        # tar -zcf ipq60xx.Packages.tar.gz packages
+        # tar -zcf IPQ60XX.Packages.tar.gz packages
         rm -rf packages feeds.buildinfo version.buildinfo sha256sums profiles.json
         echo "FIRMWARE_PATH=$PWD" >> $GITHUB_ENV
         
