@@ -19,7 +19,6 @@ sed -i "/attendedsysupgrade/d" $(find ./feeds/luci/collections/ -type f -name "M
 rm -rf feeds/luci/applications/luci-app-argon-config
 rm -rf feeds/luci/applications/luci-app-wechatpush
 rm -rf feeds/luci/applications/luci-app-appfilter
-rm -rf feeds/luci/applications/luci-app-watchcat
 rm -rf feeds/luci/applications/luci-app-frpc
 rm -rf feeds/luci/applications/luci-app-frps
 rm -rf feeds/luci/themes/luci-theme-argon
@@ -27,7 +26,6 @@ rm -rf feeds/packages/net/open-app-filter
 rm -rf feeds/packages/net/ariang
 rm -rf feeds/packages/net/frp
 rm -rf feeds/packages/lang/golang
-rm -rf feeds/packages/utils/watchcat
 
 # Git稀疏克隆，只克隆指定目录到本地
 function git_sparse_clone() {
@@ -73,13 +71,13 @@ fix_nss_ecm_stats() {
     echo "正在检查并修正 Makefile 编译宏..."
     echo "$file_list" | while read -r ecm_makefile; do
         [ -z "$ecm_makefile" ] && continue
-        
+
         if grep -q "ECM_NON_PORTED_TOOLS_SUPPORT" "$ecm_makefile"; then
             echo "  -> [跳过] $ecm_makefile 已包含统计宏。"
         else
             echo "  -> [修正] $ecm_makefile"
             sed -i 's/EXTRA_CFLAGS+=/EXTRA_CFLAGS+= -DECM_NON_PORTED_TOOLS_SUPPORT -DECM_STATE_OUTPUT_ENABLE -DECM_DB_CONNECTION_CROSS_REFERENCING_ENABLE -DECM_INTERFACE_VLAN_ENABLE -DECM_INTERFACE_SIT_ENABLE -DECM_INTERFACE_TUNIPIP6_ENABLE /g' "$ecm_makefile"
-            
+
             # 验证
             if grep -q "ECM_NON_PORTED_TOOLS_SUPPORT" "$ecm_makefile"; then
                 echo "     确认: 宏注入成功。"
@@ -91,17 +89,13 @@ fix_nss_ecm_stats() {
     echo "-------------------------------------------------------"
 }
 
-# ariang & frp & Watchcat & WolPlus & Argon & Aurora & Go & OpenList & Lucky & wechatpush & OpenAppFilter & 集客无线AC控制器 & 雅典娜LED控制
+# ariang & frp & WolPlus & Argon & Aurora & Go & OpenList & Lucky & wechatpush & OpenAppFilter & 集客无线AC控制器 & 雅典娜LED控制
 git_sparse_clone ariang https://github.com/laipeng668/packages net/ariang
 git_sparse_clone frp https://github.com/laipeng668/packages net/frp
 mv -f package/frp feeds/packages/net/frp
 git_sparse_clone frp https://github.com/laipeng668/luci applications/luci-app-frpc applications/luci-app-frps
 mv -f package/luci-app-frpc feeds/luci/applications/luci-app-frpc
 mv -f package/luci-app-frps feeds/luci/applications/luci-app-frps
-git_sparse_clone openwrt-23.05 https://github.com/immortalwrt/packages utils/watchcat
-mv -f package/watchcat feeds/packages/utils/watchcat
-git_sparse_clone openwrt-23.05 https://github.com/immortalwrt/luci applications/luci-app-watchcat
-mv -f package/luci-app-watchcat feeds/luci/applications/luci-app-watchcat
 git_sparse_clone main https://github.com/VIKINGYFY/packages luci-app-wolplus
 git clone --depth=1 https://github.com/jerrykuku/luci-theme-argon feeds/luci/themes/luci-theme-argon
 git clone --depth=1 https://github.com/jerrykuku/luci-app-argon-config feeds/luci/applications/luci-app-argon-config
