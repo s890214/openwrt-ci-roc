@@ -33,7 +33,6 @@ rm -rf feeds/luci/themes/luci-theme-argon
 rm -rf feeds/packages/net/open-app-filter
 rm -rf feeds/packages/net/ariang
 rm -rf feeds/packages/net/frp
-rm -rf feeds/packages/lang/golang
 
 # Git稀疏克隆，只克隆指定目录到本地
 function git_sparse_clone() {
@@ -45,7 +44,7 @@ function git_sparse_clone() {
   cd .. && rm -rf $repodir
 }
 
-# ariang & frp & WolPlus & Argon & Aurora & Go & OpenList & Lucky & wechatpush & OpenAppFilter & 集客无线AC控制器 & 雅典娜LED控制
+# ariang & frp & WolPlus & Argon & Aurora & OpenList & Lucky & wechatpush & OpenAppFilter & 集客无线AC控制器 & 雅典娜LED控制
 git_sparse_clone ariang https://github.com/laipeng668/packages net/ariang
 git_sparse_clone frp https://github.com/laipeng668/packages net/frp
 mv -f package/frp feeds/packages/net/frp
@@ -57,7 +56,6 @@ git clone --depth=1 https://github.com/jerrykuku/luci-theme-argon feeds/luci/the
 git clone --depth=1 https://github.com/jerrykuku/luci-app-argon-config feeds/luci/applications/luci-app-argon-config
 git clone --depth=1 https://github.com/eamonxg/luci-theme-aurora feeds/luci/themes/luci-theme-aurora
 git clone --depth=1 https://github.com/eamonxg/luci-app-aurora-config feeds/luci/applications/luci-app-aurora-config
-git clone --depth=1 https://github.com/sbwml/packages_lang_golang -b 25.x feeds/packages/lang/golang
 git clone --depth=1 https://github.com/sbwml/luci-app-openlist2 package/openlist2
 git clone --depth=1 https://github.com/gdy666/luci-app-lucky package/luci-app-lucky
 git clone --depth=1 https://github.com/tty228/luci-app-wechatpush package/luci-app-wechatpush
