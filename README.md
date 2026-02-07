@@ -9,7 +9,6 @@
 
 ## 项目说明
 - 默认管理地址：**`192.168.2.1`** 默认用户：**`root`** 默认密码：**`none`**
-- 源码来源：[breeze303](https://github.com/LiBwrt-op/openwrt-6.x) [VIKINGYFY](https://github.com/VIKINGYFY/immortalwrt)
 - 云编译来源：[haiibo](https://github.com/haiibo/OpenWrt) [视频教程](https://www.youtube.com/watch?v=6j4ofS0GT38&t=507s)
 
 ## 仓库说明
