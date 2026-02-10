@@ -25,6 +25,7 @@ rm -rf feeds/luci/themes/luci-theme-argon
 rm -rf feeds/packages/net/open-app-filter
 rm -rf feeds/packages/net/ariang
 rm -rf feeds/packages/net/frp
+rm -rf feeds/packages/lang/golang
 
 # Git稀疏克隆，只克隆指定目录到本地
 function git_sparse_clone() {
@@ -88,8 +89,10 @@ fix_nss_ecm_stats() {
     echo "-------------------------------------------------------"
 }
 
-# ariang & frp & WolPlus & Argon & Aurora & OpenList & Lucky & wechatpush & OpenAppFilter & 集客无线AC控制器 & 雅典娜LED控制
+# ariang & Go & frp & WolPlus & Argon & Aurora & OpenList & Lucky & wechatpush & OpenAppFilter & 集客无线AC控制器 & 雅典娜LED控制
 git_sparse_clone ariang https://github.com/laipeng668/packages net/ariang
+git_sparse_clone master https://github.com/laipeng668/packages lang/golang
+mv -f package/golang feeds/packages/lang/golang
 git_sparse_clone frp https://github.com/laipeng668/packages net/frp
 mv -f package/frp feeds/packages/net/frp
 git_sparse_clone frp https://github.com/laipeng668/luci applications/luci-app-frpc applications/luci-app-frps
@@ -130,11 +133,5 @@ git clone --depth=1 https://github.com/vernesong/OpenClash package/luci-app-open
 # 清理 PassWall 的 chnlist 规则文件
 echo "baidu.com"  > package/luci-app-passwall/luci-app-passwall/root/usr/share/passwall/rules/chnlist
 
-# 更新 feeds (拉取远程源码到本地)
 ./scripts/feeds update -a
-
-# 在安装之前执行 NSS 流量统计修复 (此时源码已拉取，补丁注入最安全)
-# fix_nss_ecm_stats
-
-# 安装 feeds (创建软链接)
 ./scripts/feeds install -a
