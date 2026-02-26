@@ -26,6 +26,7 @@ rm -rf feeds/packages/net/open-app-filter
 rm -rf feeds/packages/net/ariang
 rm -rf feeds/packages/net/frp
 rm -rf feeds/packages/lang/golang
+rm -rf feeds/packages/subconverter
 
 # Git稀疏克隆，只克隆指定目录到本地
 function git_sparse_clone() {
@@ -113,6 +114,8 @@ chmod +x package/luci-app-athena-led/root/etc/init.d/athena_led package/luci-app
 
 git clone --depth=1 https://github.com/timsaya/openwrt-bandix package/openwrt-bandix
 git clone --depth=1 https://github.com/timsaya/luci-app-bandix package/luci-app-bandix
+
+git clone --depth=1 https://github.com/tindy2013/subconverter package/subconverter
 
 ### PassWall & OpenClash ###
 
