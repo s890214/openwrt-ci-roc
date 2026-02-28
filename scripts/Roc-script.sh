@@ -26,7 +26,6 @@ rm -rf feeds/packages/net/open-app-filter
 rm -rf feeds/packages/net/ariang
 rm -rf feeds/packages/net/frp
 rm -rf feeds/packages/lang/golang
-rm -rf feeds/packages/subconverter
 
 # Git稀疏克隆，只克隆指定目录到本地
 function git_sparse_clone() {
@@ -115,8 +114,6 @@ chmod +x package/luci-app-athena-led/root/etc/init.d/athena_led package/luci-app
 git clone --depth=1 https://github.com/timsaya/openwrt-bandix package/openwrt-bandix
 git clone --depth=1 https://github.com/timsaya/luci-app-bandix package/luci-app-bandix
 
-git clone --depth=1 https://github.com/tindy2013/subconverter package/subconverter
-
 ### PassWall & OpenClash ###
 
 # 移除 OpenWrt Feeds 自带的核心库
@@ -136,56 +133,8 @@ git clone --depth=1 https://github.com/vernesong/OpenClash package/luci-app-open
 # 清理 PassWall 的 chnlist 规则文件
 echo "baidu.com"  > package/luci-app-passwall/luci-app-passwall/root/usr/share/passwall/rules/chnlist
 
-# 修复 fortify-headers vsnprintf/vsprintf 编译问题
-fix_fortify_headers
-
 ./scripts/feeds update -a
 ./scripts/feeds install -a
 
 # 修复 fortify-headers vsnprintf/vsprintf 编译问题
-fix_fortify_headers() {
-    echo "-------------------------------------------------------"
-    echo "正在修复 fortify-headers vsnprintf/vsprintf 编译问题..."
-    local patch_dir="toolchain/fortify-headers/patches"
-    
-    if [ -d "$patch_dir" ]; then
-        local patch_file="$patch_dir/004-stdio.h-ignore-Wformat-nonliteral-in-vsnprintf-and-vsprintf.patch"
-        
-        cat > "$patch_file" << 'PATCH_EOF'
-From: OpenClaw Assistant <assistant@openclaw.ai>
-Date: Thu, 27 Feb 2026 17:15:00 +0800
-Subject: [PATCH] stdio.h: also ignore -Wformat-nonliteral in vsnprintf and vsprintf
-
-The previous patch (003) only handled snprintf and sprintf, but vsnprintf
-and vsprintf have the same issue when applications use -Werror=format-nonliteral.
-
---- a/include/stdio.h
-+++ b/include/stdio.h
-@@ -124,7 +124,11 @@ _FORTIFY_FN(vsnprintf) int vsnprintf(ch
- 	if (__n > __b)
- 		__builtin_trap();
- 
-+#pragma GCC diagnostic push
-+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
- 	return __orig_vsnprintf(__s, __n, __f, __v);
-+#pragma GCC diagnostic pop
- }
- 
- _FORTIFY_FN(vsprintf) int vsprintf(char *__s, const char *__f,
-@@ -133,7 +137,11 @@ _FORTIFY_FN(vsprintf) int vsprintf(char
- 	size_t __b = __builtin_object_size(__s, 0);
- 	int __r;
- 
-+#pragma GCC diagnostic push
-+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
- 	__r = __orig_vsprintf(__s, __f, __v);
-+#pragma GCC diagnostic pop
- 	if (__b != (size_t)-1 && __r != -1 && (size_t)__r >= __b)
- 		__builtin_trap();
-PATCH_EOF
-        echo "fortify-headers 补丁已创建: $patch_file"
-    else
-        echo "警告: $patch_dir 目录不存在，跳过补丁应用！"
-    fi
-    echo "-------------------------------------------------------"
-}
+sed -i '/PKG_NAME:=subconverter/a PKG_BUILD_FLAGS:=no-lto' feeds/packages/net/subconverter/Makefile
