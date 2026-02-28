@@ -136,5 +136,14 @@ echo "baidu.com"  > package/luci-app-passwall/luci-app-passwall/root/usr/share/p
 ./scripts/feeds update -a
 ./scripts/feeds install -a
 
-# 修复 fortify-headers vsnprintf/vsprintf 编译问题
-sed -i '/PKG_NAME:=subconverter/a PKG_BUILD_FLAGS:=no-lto' feeds/packages/net/subconverter/Makefile
+# 修复 subconverter 源码中硬编码开启 LTO 导致的 fortify-headers 编译报错
+# 问题根源：GCC 14 + LTO + fortify-headers 的 vsnprintf 内联函数冲突
+# 错误信息：error: inlining failed in call to 'always_inline' 'vsnprintf'
+# 解决方案：利用 OpenWrt 钩子，在解压源码后动态剔除 CMakeLists.txt 中的 -flto=auto 参数
+cat >> feeds/packages/net/subconverter/Makefile << 'EOF'
+
+define subconverter_strip_lto
+	sed -i 's/-flto=auto//g' $(PKG_BUILD_DIR)/CMakeLists.txt
+endef
+Hooks/Prepare/Post += subconverter_strip_lto
+EOF
