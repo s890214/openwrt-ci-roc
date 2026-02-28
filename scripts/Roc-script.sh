@@ -142,11 +142,32 @@ echo "baidu.com"  > package/luci-app-passwall/luci-app-passwall/root/usr/share/p
 # 修复 subconverter 源码中硬编码开启 LTO 导致的 fortify-headers 编译报错
 # 问题根源：GCC 14 + LTO + fortify-headers 的 vsnprintf 内联函数冲突
 # 错误信息：error: inlining failed in call to 'always_inline' 'vsnprintf'
-# 解决方案：利用 OpenWrt 钩子，在解压源码后动态剔除 CMakeLists.txt 中的 -flto=auto 参数
+# 解决方案：完全禁用 subconverter 的 LTO 编译选项
+
+# 在 Makefile 末尾添加修复配置
 cat >> feeds/packages/net/subconverter/Makefile << 'EOF'
 
+# 禁用 LTO 编译选项
+PKG_BUILD_FLAGS:=no-lto
+
+# 定义编译前处理钩子，彻底移除所有 LTO 相关设置
 define subconverter_strip_lto
-	sed -i 's/-flto=auto//g' $(PKG_BUILD_DIR)/CMakeLists.txt
+	$(call info,=== Removing ALL LTO flags from subconverter sources ===)
+	# 移除所有 CMake 文件中的 LTO 设置
+	find $(PKG_BUILD_DIR) -type f \( -name "CMakeLists.txt" -o -name "*.cmake" -o -name "CMakeCache.txt" \) -exec sed -i \
+		-e 's/-flto=auto//g' \
+		-e 's/-flto=[0-9]*//g' \
+		-e 's/-fno-fat-lto-objects//g' \
+		-e 's/-fno-lto//g' \
+		-e '/set.*LTO/d' \
+		-e '/CMAKE_INTERPROCEDURAL_OPTIMIZATION/d' \
+		{} \;
+	# 清理构建目录中的 CMake 缓存
+	rm -rf $(PKG_BUILD_DIR)/CMakeCache.txt $(PKG_BUILD_DIR)/CMakeFiles
 endef
 Hooks/Prepare/Post += subconverter_strip_lto
+
+# 覆盖 CMAKE 选项，强制禁用 LTO
+CMAKE_OPTIONS += \
+	-DCMAKE_INTERPROCEDURAL_OPTIMIZATION=OFF
 EOF
