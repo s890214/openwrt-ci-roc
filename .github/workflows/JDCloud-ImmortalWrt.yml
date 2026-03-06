@@ -46,13 +46,6 @@ jobs:
         sudo -E systemctl daemon-reload
         sudo timedatectl set-timezone "$TZ"
 
-    - name: Install Rust Toolchain(安装Rust工具链)
-      run: |
-        # luci-app-openclash 依赖 ruby，ruby 在 aarch64 下触发 YJIT 编译需要 rust/host
-        # 预装系统级 Rust 可跳过从源码编译 rustc-1.90.0 的过程（否则需要 1h+ 且容易 OOM）
-        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable
-        echo "$HOME/.cargo/bin" >> $GITHUB_PATH
-
     - name: Checkout(检出代码)
       uses: actions/checkout@main
 
